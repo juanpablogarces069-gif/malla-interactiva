@@ -17,7 +17,7 @@ checklist de avance. Con cuenta opcional, guarda tu malla en la nube.
 - Renombrar ramos genéricos (AFG / OPI / Optativo Exploratorio).
 - Semestres dinámicos (agregar/quitar).
 - Panel de egreso: cuenta regresiva, gráficos de créditos y checklist.
-- **Login con enlace mágico (Supabase Auth)** y **guardado por usuario en la nube**, con
+- **Login con Google (Supabase Auth + OAuth)** y **guardado por usuario en la nube**, con
   `localStorage` como caché/respaldo offline.
 
 ## 🧱 Stack
