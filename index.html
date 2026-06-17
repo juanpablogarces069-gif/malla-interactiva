@@ -107,12 +107,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .mcode{font-size:11px;color:#64748b;margin-bottom:12px}
 .msec{margin-bottom:11px}
 .msec h4{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-#m-status{display:flex;gap:7px}
-.mst{flex:1;padding:8px 4px;border:1.5px solid #e2e8f0;border-radius:8px;background:#f8fafc;font-size:12px;font-weight:600;color:#64748b;cursor:pointer}
-.mst:hover{background:#f1f5f9}
-.mst.on.mst-pending{background:#94a3b8;border-color:#94a3b8;color:white}
-.mst.on.mst-approved{background:#16a34a;border-color:#16a34a;color:white}
-.mst.on.mst-failed{background:#e11d48;border-color:#e11d48;color:white}
 .pi{display:flex;align-items:flex-start;gap:7px;padding:4px 0;font-size:12px;border-bottom:1px solid #f8fafc;line-height:1.4}
 .ps{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
 .ps.ok{background:#16a34a}
@@ -194,7 +188,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .cl-prog{height:5px;background:#f1f5f9;border-radius:3px;overflow:hidden;margin-bottom:9px}
 .cl-prog>div{height:100%;background:#16a34a;transition:width .3s}
 .cl-chips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{display:flex;align-items:center;gap:5px;font-size:11px;padding:3px 8px;border-radius:6px;cursor:default;border:1px solid #e2e8f0;background:#f8fafc;user-select:none}
+.chip{display:flex;align-items:center;gap:5px;font-size:11px;padding:3px 8px;border-radius:6px;cursor:pointer;border:1px solid #e2e8f0;background:#f8fafc;user-select:none}
+.chip:hover{filter:brightness(.97);box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .chip .cdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .chip.c-approved{background:#f0fdf4;border-color:#86efac}
 .chip.c-failed{background:#fff1f2;border-color:#fda4af}
@@ -255,8 +250,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 
 <div id="tabs">
   <button class="tab-btn active" data-tab="malla">📅 Simulación de malla</button>
-  <button class="tab-btn" data-tab="egreso">🎯 Panel de egreso</button>
-  <button class="tab-btn" data-tab="ramos">📋 Ramos para egresar</button>
+  <button class="tab-btn" data-tab="info">📊 Panel de información</button>
 </div>
 
 <div id="tabwrap">
@@ -297,7 +291,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
   </div>
 </div>
 
-<div class="tab-panel scrolly" data-tab="egreso">
+<div class="tab-panel scrolly" data-tab="info">
  <div class="tab-scroll">
   <div class="panel-top">
     <div class="box">
@@ -331,11 +325,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
     <div class="big-sub" id="ins-sub">0% de lo necesario para egresar</div>
     <div class="ins-grid" id="ins-breakdown"></div>
   </div>
- </div>
-</div>
 
-<div class="tab-panel scrolly" data-tab="ramos">
- <div class="tab-scroll">
+  <h2>📋 Ramos para egresar</h2>
   <div id="checklist"></div>
  </div>
 </div>
@@ -352,10 +343,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
     <div class="msec">
       <h4>Estado actual</h4>
       <div id="m-info"></div>
-    </div>
-    <div class="msec">
-      <h4>Cambiar estado</h4>
-      <div id="m-status"></div>
     </div>
     <button id="mclose">Cerrar</button>
   </div>
@@ -830,17 +817,17 @@ function renderSems() {
 
 function makeCard(inst) {
   const c=defOf(inst), ds=displayState(inst);
-  const locked=isLocked(inst), isRetake=attemptOf(inst)>1;
+  const isRetake=attemptOf(inst)>1;
 
   const el=document.createElement("div");
-  el.className=`card s-${ds}${c.cr===0?" zero":""}${locked?" locked":""}${isRetake?" retake":""}`;
-  if (!locked) el.draggable=true;
+  el.className=`card s-${ds}${c.cr===0?" zero":""}${isRetake?" retake":""}`;
+  el.draggable=true;
   el.innerHTML=`
     <div class="ctop">
       <div class="sdot ${ds}"></div>
       <div class="ccode">${baseOf(inst)}${isRetake?'<span class="rbadge">↻'+attemptOf(inst)+'</span>':""}</div>
-      <button class="lbtn${locked?' on':''}" title="${locked?'Soltar (fijado)':'Fijar en su lugar'}">${locked?'🔒':'🔓'}</button>
       ${c.editable?'<button class="ebtn" title="Editar nombre">✎</button>':""}
+      <button class="ibtn" title="Ver información del ramo">i</button>
     </div>
     <div class="cname">${nameOf(inst)}</div>
     <div class="cbot">
@@ -849,23 +836,17 @@ function makeCard(inst) {
     </div>
   `;
 
-  if (!locked) {
-    el.addEventListener("dragstart", e => {
-      dragId=inst; el.classList.add("dragging"); e.dataTransfer.effectAllowed="move";
-    });
-    el.addEventListener("dragend", ()=>{
-      dragId=null; el.classList.remove("dragging");
-      document.querySelectorAll(".drop-zone").forEach(z=>z.className="drop-zone");
-    });
-  }
-  el.querySelector(".lbtn").addEventListener("click", e=>{
-    e.stopPropagation();
-    if (locked) delete S.locked[inst]; else S.locked[inst]=true;
-    save(); render();
+  el.addEventListener("dragstart", e => {
+    dragId=inst; el.classList.add("dragging"); e.dataTransfer.effectAllowed="move";
+  });
+  el.addEventListener("dragend", ()=>{
+    dragId=null; el.classList.remove("dragging");
+    document.querySelectorAll(".drop-zone").forEach(z=>z.className="drop-zone");
   });
   const eb=el.querySelector(".ebtn"); if(eb) eb.addEventListener("click",e=>{ e.stopPropagation(); editName(inst); });
-  // Click en la tarjeta → cuadro de información (nombre + requisitos + estado)
-  el.addEventListener("click", e => { if(e.target.closest("button")) return; showModal(inst); });
+  el.querySelector(".ibtn").addEventListener("click",e=>{ e.stopPropagation(); showModal(inst); });   // [i] → info
+  // Click en la tarjeta → cambiar estado (Programado → Aprobado → Reprobado → …)
+  el.addEventListener("click", e => { if(e.target.closest("button")) return; cycleStatus(inst); });
 
   return el;
 }
@@ -900,6 +881,7 @@ function renderPool() {
         <div class="ccode">${baseOf(inst)}${isRetake?'<span class="rbadge">↻'+attemptOf(inst)+'</span>':""}</div>
         ${c.editable?'<button class="ebtn" title="Editar nombre">✎</button>':""}
         ${isRetake?'<button class="dbtn" title="Eliminar reintento">🗑</button>':""}
+        <button class="ibtn" title="Ver información del ramo">i</button>
       </div>
       <div class="cname" style="font-size:10px">${nameOf(inst)}</div>
       <div class="cbot" style="margin-top:2px">
@@ -911,8 +893,9 @@ function renderPool() {
     el.addEventListener("dragend",()=>{ dragId=null; });
     const eb=el.querySelector(".ebtn"); if(eb) eb.addEventListener("click",e=>{ e.stopPropagation(); editName(inst); });
     const db=el.querySelector(".dbtn"); if(db) db.addEventListener("click",e=>{ e.stopPropagation(); removeRetake(inst); });
-    // Click en la tarjeta del pool → cuadro de información
-    el.addEventListener("click", e=>{ if(e.target.closest("button")) return; showModal(inst); });
+    el.querySelector(".ibtn").addEventListener("click",e=>{ e.stopPropagation(); showModal(inst); });   // [i] → info
+    // Click en la tarjeta del pool → cambiar estado
+    el.addEventListener("click", e=>{ if(e.target.closest("button")) return; cycleStatus(inst); });
     pool.appendChild(el);
   });
 }
@@ -947,16 +930,6 @@ function showModal(inst) {
     <div class="pi"><b>Fijado:</b>&nbsp;${isLocked(inst)?"Sí 🔒":"No"}</div>
     ${c.tag?`<div class="pi"><b>Tag:</b>&nbsp;${c.tag}</div>`:""}
   `;
-
-  // botones para cambiar el estado (deliberado, sin clics accidentales)
-  const cur=S.status[inst]||"pending";
-  const opts=[["pending","Programado"],["approved","Aprobado"],["failed","Reprobado"]];
-  document.getElementById("m-status").innerHTML=opts.map(([k,l])=>
-    `<button class="mst mst-${k}${cur===k?" on":""}" data-st="${k}">${l}</button>`).join("");
-  document.querySelectorAll("#m-status .mst").forEach(b=>b.addEventListener("click",()=>{
-    setStatus(modalInst, b.dataset.st);   // cambia estado y re-renderiza la malla
-    showModal(modalInst);                  // refresca el cuadro
-  }));
 
   document.getElementById("ov").classList.add("open");
 }
@@ -1008,61 +981,59 @@ function showErr(e, msg) {
 // ─────────────────────────────────────────────
 // PANEL DE EGRESO
 // ─────────────────────────────────────────────
+// Cada bloque tiene su crédito requerido oficial (req) y los ramos que lo componen.
+// Los electivos (Diploma incluye 20 cr de optativos ICM; OPI 30 cr) se topan en su req.
 const PROGRAM=[
-  {g:"Plan Común · Bachillerato (Sem 1-4)", codes:["MAT1000","FIS1503","BIO141C","QIM100","CLG0901","MAT1610","ING1004","MAT1203","QIM100A","IIC1103","MAT1620","FIS1514","FIS0154","MAT1630","MAT1640","FIS1523","FIS0152","ICM2403"]},
-  {g:"Major Ing. Mecánica (Sem 5-8)", codes:["EYP1113","FIS1533","FIS0153","ICH1104","ICM2803","ICM2028","ICM2813","ICM2022","ICM2223","ICM2213","ICM2503","ICM2026","ING1001"]},
-  {g:"Formación General (AFG + Exploratorio)", codes:["AFG_SB","AFG_CS","EAE105A","FIL2001","AFG_E","AFG_A","AFG_T","OPT_EXP"]},
-  {g:"Minor Ing. Industrial", codes:["ICS1113","ICS2123","ICS2523","ICS2613","ICS2813"]},
-  {g:"Diploma Mecánica (Continuidad)", codes:["ICM3290","ICM3313","ICM3532","ICM3390"]},
-  {g:"Título Ing. Civil Industrias (Continuidad)", codes:["ICS3913","ICS3313","ICS3413","ICS3213","ING2001"]},
-  {g:"Optativos de Mecánica (elegir 20 cr)", credits:20, pool:["ICM3213","ICM3233","ICM3243","ICM3251","ICM3252","ICM3254","ICM3256","ICM3480","ICM3534","ICM3553","ICM3762"]},
-  {g:"Optativos Profundización Ing. (OPI · 30 cr)", credits:30, pool:["OPI_1","OPI_2","OPI_3"]},
+  {g:"Plan Común · Bachillerato", req:185, codes:["MAT1000","FIS1503","BIO141C","QIM100","CLG0901","MAT1610","ING1004","MAT1203","OPT_EXP","MAT1620","FIS1514","FIS0154","QIM100A","IIC1103","EAE105A","MAT1630","MAT1640","FIS1523","FIS0152","EYP1113","FIS1533","FIS0153","ING1001"]},
+  {g:"Major Ing. Mecánica", req:100, codes:["ICH1104","ICM2022","ICM2028","ICM2213","ICM2223","ICM2403","ICM2503","ICM2803","ICM2813","ICM2026"]},
+  {g:"Formación General (AFG)", req:70, codes:["AFG_SB","AFG_CS","FIL2001","AFG_E","AFG_A","AFG_H","AFG_T"]},
+  {g:"Minor Ing. Industrial", req:50, codes:["ICS1113","ICS2123","ICS2523","ICS2613","ICS2813"]},
+  {g:"Diploma Mecánica (mín. + optativos)", req:60, codes:["ICM3290","ICM3313","ICM3532","ICM3390","ICM3213","ICM3233","ICM3243","ICM3251","ICM3252","ICM3254","ICM3256","ICM3480","ICM3534","ICM3553","ICM3762"]},
+  {g:"Título Ing. Civil Industrias", req:40, codes:["ICS3913","ICS3313","ICS3413","ICS3213","ING2001"]},
+  {g:"Optativos Profundización Ing. (OPI)", req:30, codes:["OPI_1","OPI_2","OPI_3"]},
 ];
 
-// estado de un código para el listado/gráfico: approved | failed | in_progress | pending (puesto) | porponer
+// estado de un código para el listado/gráfico: approved | failed | pending (puesto) | porponer
 function codeStatus(code){
   if(isApprovedCode(code)) return "approved";
   const insts=instancesOf(code);
-  // si hay algún intento reprobado y aún no se aprueba → reprobado (para que la barra roja se mueva)
-  if(insts.some(i=>S.status[i]==="failed")) return "failed";
-  // instancia activa ubicada en la malla => "puesto" (pending/in_progress)
+  if(insts.some(i=>S.status[i]==="failed")) return "failed";   // reprobado tiene prioridad (barra roja)
   const placedAct=insts.find(i=>S.placement[i]!==null && (S.status[i]==="pending"||S.status[i]==="in_progress"));
   if(placedAct) return S.status[placedAct];
-  // sólo existe en el pool => por poner
-  const poolAct=insts.find(i=>S.placement[i]===null && S.status[i]==="pending");
-  if(poolAct) return "porponer";
   return "porponer";
 }
 function failCount(code){ return instancesOf(code).filter(i=>S.status[i]==="failed").length; }
-// agrupa codeStatus en los 4 buckets del gráfico
-function bucketOf(s){ return s==="approved"?"approved":(s==="pending"||s==="in_progress")?"puesto":s==="porponer"?"porponer":"failed"; }
-
-function progStats(){
-  let total=0, approved=0;
-  PROGRAM.forEach(b=>{
-    if(b.codes){ b.codes.forEach(c=>{ total+=C[c].cr; if(isApprovedCode(c)) approved+=C[c].cr; }); }
-    else { total+=b.credits; let got=0; b.pool.forEach(c=>{ if(isApprovedCode(c)) got+=C[c].cr; }); approved+=Math.min(got,b.credits); }
-  });
-  return {total, approved, pending:total-approved};
-}
 // un código está "inscrito" si tiene alguna instancia ubicada en la malla y NO reprobada
 function isInscrito(code){
   return instancesOf(code).some(i => S.placement[i]!==null && S.status[i]!=="failed");
 }
-// créditos inscritos de un bloque del programa (sin contar reprobados)
-function groupInscritos(b){
-  if(b.codes) return b.codes.reduce((n,c)=> isInscrito(c)? n+C[c].cr : n, 0);
-  const got = b.pool.reduce((n,c)=> isInscrito(c)? n+C[c].cr : n, 0);
-  return Math.min(got, b.credits);   // optativos/OPI: tope = lo exigido
+// helpers por bloque (todo topado en su req oficial)
+function grpReq(b){ return b.req; }
+function grpApproved(b){ return Math.min(b.codes.reduce((n,c)=> isApprovedCode(c)? n+C[c].cr : n, 0), b.req); }
+function grpInscritos(b){ return Math.min(b.codes.reduce((n,c)=> isInscrito(c)? n+C[c].cr : n, 0), b.req); }
+// reparte los req de un bloque en buckets (aprobado>reprobado>programado>por poner), topado
+function grpBuckets(b){
+  let appr=0, fail=0, puesto=0;
+  b.codes.forEach(c=>{
+    const s=codeStatus(c);
+    if(s==="approved") appr+=C[c].cr;
+    else if(s==="failed") fail+=C[c].cr;
+    else if(isInscrito(c)) puesto+=C[c].cr;   // ubicado y no reprobado = programado
+  });
+  appr=Math.min(appr,b.req);
+  fail=Math.min(fail,b.req-appr);
+  puesto=Math.min(puesto,b.req-appr-fail);
+  return {approved:appr, failed:fail, puesto, porponer:b.req-appr-fail-puesto};
 }
-function groupTotal(b){ return b.codes ? b.codes.reduce((n,c)=>n+C[c].cr,0) : b.credits; }
+
+function progStats(){
+  let total=0, approved=0;
+  PROGRAM.forEach(b=>{ total+=b.req; approved+=grpApproved(b); });
+  return {total, approved, pending:total-approved};
+}
 function statusBreakdown(){
   const o={approved:0,puesto:0,porponer:0,failed:0};
-  PROGRAM.filter(b=>b.codes).forEach(b=>b.codes.forEach(c=>{ o[bucketOf(codeStatus(c))]+=C[c].cr; }));
-  PROGRAM.filter(b=>b.credits).forEach(b=>{
-    let got=0; b.pool.forEach(c=>{ if(isApprovedCode(c)) got+=C[c].cr; });
-    got=Math.min(got,b.credits); o.approved+=got; o.porponer+=(b.credits-got);
-  });
+  PROGRAM.forEach(b=>{ const g=grpBuckets(b); o.approved+=g.approved; o.failed+=g.failed; o.puesto+=g.puesto; o.porponer+=g.porponer; });
   return o;
 }
 function gradInfo(){
@@ -1124,7 +1095,7 @@ function renderPanel(){
   // créditos inscritos (ubicados, sin reprobados) + desglose por categoría
   let insTotal=0;
   const insRows=PROGRAM.map(b=>{
-    const ins=groupInscritos(b), tot=groupTotal(b);
+    const ins=grpInscritos(b), tot=grpReq(b);
     insTotal+=ins;
     return {name:b.g, ins, tot};
   });
@@ -1155,26 +1126,25 @@ function renderPanel(){
   const cl=document.getElementById("checklist");
   cl.innerHTML="";
   PROGRAM.forEach(b=>{
-    const list=b.codes||b.pool;
-    let gTot,gApp;
-    if(b.codes){ gTot=list.reduce((n,c)=>n+C[c].cr,0); gApp=list.reduce((n,c)=>n+(isApprovedCode(c)?C[c].cr:0),0); }
-    else { gTot=b.credits; gApp=Math.min(list.reduce((n,c)=>n+(isApprovedCode(c)?C[c].cr:0),0), b.credits); }
+    const gTot=grpReq(b), gApp=grpApproved(b);
+    const elective = b.codes.reduce((n,c)=>n+C[c].cr,0) > b.req; // bloques con más ramos que cupo (Diploma, OPI)
     const box=document.createElement("div"); box.className="cl-group";
     box.innerHTML=`
       <div class="cl-ghdr">
         <div class="cl-gtitle">${b.g}</div>
-        <div class="cl-gcr">${gApp}/${gTot} cr${b.credits?` · elegir ${b.credits}`:""}</div>
+        <div class="cl-gcr">${gApp}/${gTot} cr${elective?` · elegir ${b.req}`:""}</div>
       </div>
       <div class="cl-prog"><div style="width:${gTot?gApp/gTot*100:0}%"></div></div>
       <div class="cl-chips"></div>`;
     const chips=box.querySelector(".cl-chips");
-    list.forEach(code=>{
+    b.codes.forEach(code=>{
       const s=codeStatus(code), fc=failCount(code);
       const showFc=fc && s!=="approved";
       const chip=document.createElement("div");
       chip.className=`chip c-${s}`;
-      chip.title=nameOf(code)+" — "+STLABEL[s]+(showFc?` · reprobado ${fc}×`:"")+" (refleja la simulación de malla)";
+      chip.title=nameOf(code)+" — "+STLABEL[s]+(showFc?` · reprobado ${fc}×`:"")+" (click para ver info del ramo)";
       chip.innerHTML=`<div class="cdot sdot ${s}"></div>${code} <small>${C[code].cr}cr</small>${showFc?'<span class="fbadge">✗'+fc+'</span>':""}`;
+      chip.addEventListener("click",()=>showModal(primaryInstance(code)));   // solo muestra info (no cambia la malla)
       chips.appendChild(chip);
     });
     cl.appendChild(box);
