@@ -30,6 +30,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .sem-cr.over{color:#fca5a5;font-weight:700}
 .sem-cr.near{color:#fde68a}
 .sem-cr.ok{color:#bbf7d0}
+.sem-done{display:flex;align-items:center;gap:5px;margin-top:5px;font-size:10px;font-weight:600;color:#dbeafe;cursor:pointer;user-select:none}
+.sem-done input{width:13px;height:13px;cursor:pointer;accent-color:#16a34a}
 .drop-zone{min-height:72px;padding:5px;display:flex;flex-direction:column;gap:4px}
 .drop-zone.dov{background:#dbeafe}
 .drop-zone.dov-bad{background:#fee2e2}
@@ -232,8 +234,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       <h3>Leyenda estado</h3>
       <div class="legend">
         <div class="li"><div class="ldot" style="background:#f59e0b"></div>Por poner (en pool)</div>
-        <div class="li"><div class="ldot" style="background:#94a3b8"></div>Planificado (en malla)</div>
-        <div class="li"><div class="ldot" style="background:#2563eb"></div>En curso</div>
+        <div class="li"><div class="ldot" style="background:#94a3b8"></div>Programado (en malla)</div>
         <div class="li"><div class="ldot" style="background:#16a34a"></div>Aprobado</div>
         <div class="li"><div class="ldot" style="background:#e11d48"></div>Reprobado</div>
       </div>
@@ -466,7 +467,9 @@ const C = {
 };
 
 const MAX_CR = 60;
-const ST_CYCLE = ["pending","in_progress","approved","failed"];
+// Ciclo de clic: Programado (en malla) → Aprobado → Reprobado → Programado.
+// (Se quitó "en curso/azul": estar en la malla ya significa "programado".)
+const ST_CYCLE = ["pending","approved","failed"];
 
 // ─────────────────────────────────────────────
 // STATE
@@ -575,8 +578,22 @@ function inPool(){ return allInstances().filter(i => S.placement[i]===null); }
 // ─────────────────────────────────────────────
 function setStatus(inst, st){ S.status[inst]=st; reconcileRetakes(baseOf(inst)); save(); render(); }
 function cycleStatus(inst){
-  const i=ST_CYCLE.indexOf(S.status[inst]||"pending");
+  const cur=S.status[inst]||"pending";
+  let i=ST_CYCLE.indexOf(cur);
+  if(i<0) i=0;                       // estados antiguos (ej. in_progress) → vuelven a "programado"
   setStatus(inst, ST_CYCLE[(i+1)%ST_CYCLE.length]);
+}
+// ¿el semestre está completamente cursado? (todos sus ramos aprobados)
+function semCursado(sem){
+  const list=inSem(sem);
+  return list.length>0 && list.every(i=>S.status[i]==="approved");
+}
+// Marca/desmarca todo un semestre como cursado (verde) de una sola vez
+function setSemesterCursado(sem, done){
+  const list=inSem(sem);
+  list.forEach(inst=>{ S.status[inst] = done ? "approved" : "pending"; });
+  [...new Set(list.map(baseOf))].forEach(c=>reconcileRetakes(c)); // limpia reintentos al aprobar
+  save(); render();
 }
 function addRetake(code){
   S.retakeCount[code]=(S.retakeCount[code]||0)+1;
@@ -656,7 +673,7 @@ function canDrop(inst, tgt) {
 }
 
 const TAGS={major:"Major",afg:"AFG",minor:"Minor",optativo:"Opt.",diploma:"Diploma",continuation:"Cont.",cupo:"Cupo",opi:"OPI"};
-const STLABEL={pending:"Planificado",in_progress:"En curso",approved:"Aprobado",failed:"Reprobado",porponer:"Por poner",puesto:"Puesto en malla"};
+const STLABEL={pending:"Programado",in_progress:"En curso",approved:"Aprobado",failed:"Reprobado",porponer:"Por poner",puesto:"Programado en malla"};
 
 // ─────────────────────────────────────────────
 // RENDER
@@ -688,6 +705,8 @@ function renderSems() {
     // only the last semester (if empty) can be removed
     const canDel = sem===S.numSems && sem>11 && courses.length===0;
 
+    const done=semCursado(sem);
+
     const col=document.createElement("div");
     col.className="semester";
 
@@ -696,12 +715,16 @@ function renderSems() {
         ${canDel?`<button class="sem-del" title="Eliminar semestre">×</button>`:""}
         <div class="sem-title">Semestre ${sem}${isCont?" · Continuidad":""}</div>
         <div class="sem-cr ${crCls}">${cr}/${MAX_CR} cr</div>
+        ${courses.length?`<label class="sem-done"><input type="checkbox" ${done?"checked":""}> Semestre cursado</label>`:""}
       </div>
       <div class="drop-zone" data-sem="${sem}"></div>
     `;
 
     const zone=col.querySelector(".drop-zone");
     courses.forEach(inst => zone.appendChild(makeCard(inst)));
+
+    const chk=col.querySelector(".sem-done input");
+    if(chk) chk.addEventListener("change", ()=> setSemesterCursado(sem, chk.checked));
 
     zone.addEventListener("dragover", e => {
       e.preventDefault();
@@ -975,7 +998,7 @@ function renderPanel(){
   // stacked bar
   const totBar=bd.approved+bd.puesto+bd.porponer+bd.failed||1;
   const order=["approved","puesto","porponer","failed"];
-  const labels={approved:"Aprobado",puesto:"Puesto en malla",porponer:"Por poner",failed:"Reprobado"};
+  const labels={approved:"Aprobado",puesto:"Programado",porponer:"Por poner",failed:"Reprobado"};
   const cols={approved:"#16a34a",puesto:"#2563eb",porponer:"#f59e0b",failed:"#e11d48"};
   document.getElementById("sbar").innerHTML=order.map(k=>
     `<div class="seg-${k}" style="width:${bd[k]/totBar*100}%" title="${labels[k]}: ${bd[k]} cr"></div>`).join("");
