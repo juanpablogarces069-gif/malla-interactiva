@@ -1,0 +1,1176 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Malla Interactiva — Ing. Mecánica + Industrial PUC</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;background:#f1f5f9;color:#1e293b;min-height:100vh}
+
+/* Header */
+#header{background:#0f172a;color:white;padding:8px 14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:50}
+#header h1{font-size:14px;font-weight:700;white-space:nowrap}
+.stat{background:#1e293b;border-radius:5px;padding:3px 9px;font-size:11px;white-space:nowrap}
+.stat b{color:#60a5fa}
+#btn-reset{margin-left:auto;background:#7f1d1d;color:white;border:none;border-radius:5px;padding:4px 10px;cursor:pointer;font-size:11px}
+#btn-reset:hover{background:#991b1b}
+
+/* Main */
+#main{display:flex;height:62vh;overflow:hidden;border-bottom:3px solid #cbd5e1}
+#scroll-area{flex:1;overflow:auto;padding:10px}
+#semesters{display:flex;gap:8px;align-items:flex-start;min-width:max-content}
+
+/* Semester */
+.semester{width:182px;flex-shrink:0;background:white;border-radius:9px;border:1px solid #e2e8f0;overflow:hidden}
+.sem-hdr{padding:7px 9px;background:#1e40af;color:white}
+.sem-hdr.cont{background:#6d28d9}
+.sem-title{font-size:11px;font-weight:700}
+.sem-cr{font-size:10px;margin-top:1px}
+.sem-cr.over{color:#fca5a5;font-weight:700}
+.sem-cr.near{color:#fde68a}
+.sem-cr.ok{color:#bbf7d0}
+.drop-zone{min-height:72px;padding:5px;display:flex;flex-direction:column;gap:4px}
+.drop-zone.dov{background:#dbeafe}
+.drop-zone.dov-bad{background:#fee2e2}
+.sem-del{float:right;background:rgba(255,255,255,.25);border:none;color:white;width:16px;height:16px;border-radius:4px;cursor:pointer;font-size:11px;line-height:1;padding:0}
+.sem-del:hover{background:rgba(255,255,255,.45)}
+.add-sem{width:54px;flex-shrink:0;align-self:stretch;min-height:120px;background:#e2e8f0;border:2px dashed #94a3b8;border-radius:9px;color:#475569;font-size:28px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.add-sem:hover{background:#cbd5e1;color:#1e293b}
+
+/* Card */
+.card{background:white;border:1.5px solid #e2e8f0;border-radius:7px;padding:5px 7px;cursor:grab;user-select:none;transition:transform .1s,box-shadow .1s}
+.card:hover{transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.1)}
+.card.dragging{opacity:.4}
+.card.s-approved{background:#f0fdf4;border-color:#16a34a}
+.card.s-failed{background:#fff1f2;border-color:#e11d48}
+.card.s-in_progress{background:#eff6ff;border-color:#2563eb}
+.card.s-pending{background:#f8fafc;border-color:#cbd5e1}
+.card.s-porponer{background:#fffbeb;border-color:#f59e0b}
+.card.zero{opacity:.75}
+.ctop{display:flex;align-items:center;gap:4px;margin-bottom:2px}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sdot.approved{background:#16a34a}
+.sdot.failed{background:#e11d48}
+.sdot.in_progress{background:#2563eb}
+.sdot.pending{background:#94a3b8}
+.sdot.porponer{background:#f59e0b}
+.ccode{font-size:10px;font-weight:700;color:#475569;flex:1}
+.ibtn{width:15px;height:15px;border-radius:50%;background:#e2e8f0;border:none;cursor:pointer;font-size:9px;font-weight:700;color:#64748b;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.ibtn:hover{background:#94a3b8;color:white}
+.ebtn{width:15px;height:15px;border-radius:50%;background:#fde68a;border:none;cursor:pointer;font-size:9px;color:#854d0e;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.ebtn:hover{background:#fbbf24}
+.cname{font-size:11px;line-height:1.3;color:#334155;margin-bottom:3px}
+.cbot{display:flex;align-items:center;justify-content:space-between}
+.ccr{font-size:10px;color:#64748b;font-weight:600}
+.ctag{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:700}
+.t-major{background:#dbeafe;color:#1d4ed8}
+.t-afg{background:#ede9fe;color:#6d28d9}
+.t-minor{background:#dcfce7;color:#15803d}
+.t-optativo{background:#e0f2fe;color:#0369a1}
+.t-diploma{background:#f3e8ff;color:#7e22ce}
+.t-continuation{background:#ecfdf5;color:#065f46}
+.t-cupo{background:#fef9c3;color:#854d0e}
+.t-opi{background:#ffe4e6;color:#be123c}
+
+/* Sidebar */
+#sidebar{width:210px;flex-shrink:0;background:white;border-left:1px solid #e2e8f0;overflow-y:auto;display:flex;flex-direction:column}
+.ss{padding:9px;border-bottom:1px solid #f1f5f9}
+.ss h3{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.pool-empty{font-size:11px;color:#94a3b8}
+.pcard{background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:7px;padding:4px 7px;cursor:grab;margin-bottom:4px}
+.pcard:hover{background:#f1f5f9}
+.legend{display:flex;flex-direction:column;gap:5px}
+.li{display:flex;align-items:center;gap:6px;font-size:11px}
+.ldot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.help-text{font-size:11px;color:#64748b;line-height:1.6}
+
+/* Modal */
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:999;align-items:center;justify-content:center}
+#ov.open{display:flex}
+#modal{background:white;border-radius:12px;padding:18px;max-width:390px;width:92%;max-height:85vh;overflow-y:auto}
+#modal h2{font-size:15px;font-weight:700;margin-bottom:3px}
+.mcode{font-size:11px;color:#64748b;margin-bottom:12px}
+.msec{margin-bottom:11px}
+.msec h4{font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.pi{display:flex;align-items:flex-start;gap:7px;padding:4px 0;font-size:12px;border-bottom:1px solid #f8fafc;line-height:1.4}
+.ps{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.ps.ok{background:#16a34a}
+.ps.no{background:#e11d48}
+.req-group{border-left:2px solid #e2e8f0;padding-left:8px;margin:3px 0}
+.req-group.ror{border-color:#fde68a}
+.req-label{font-size:10px;color:#64748b;margin-bottom:3px;font-weight:600}
+.req-label.ror{color:#92400e}
+#mclose{margin-top:12px;width:100%;padding:8px;background:#1e40af;color:white;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600}
+#mclose:hover{background:#1d4ed8}
+
+/* Lock / retake / delete buttons */
+.card.locked{cursor:default;box-shadow:inset 0 0 0 2px #cbd5e1}
+.card.locked:hover{transform:none}
+.lbtn,.dbtn{width:15px;height:15px;border-radius:50%;background:#e2e8f0;border:none;cursor:pointer;font-size:8px;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;line-height:1}
+.lbtn:hover,.dbtn:hover{background:#cbd5e1}
+.lbtn.on{background:#fde68a}
+.dbtn{background:#fecaca}
+.dbtn:hover{background:#fca5a5}
+.rbadge{font-size:8px;font-weight:700;color:#be123c;background:#ffe4e6;border-radius:3px;padding:0 3px;margin-left:3px}
+.card.retake{border-style:dashed}
+.pcard.retake{border-color:#fb7185;background:#fff1f2}
+
+/* Error tip */
+.etip{position:fixed;background:#7f1d1d;color:white;padding:6px 11px;border-radius:6px;font-size:12px;z-index:600;pointer-events:none;max-width:260px;line-height:1.4}
+
+/* ───── Panel de Egreso ───── */
+#panel{padding:14px;max-width:1400px;margin:0 auto}
+#panel h2{font-size:15px;font-weight:800;color:#0f172a;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.panel-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:16px}
+.box{background:white;border:1px solid #e2e8f0;border-radius:11px;padding:14px}
+.box h3{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+/* countdown */
+.cd-row{display:flex;gap:10px}
+.cd-cell{flex:1;text-align:center;background:#f8fafc;border-radius:9px;padding:10px 6px}
+.cd-num{font-size:26px;font-weight:800;color:#1e40af;line-height:1}
+.cd-lbl{font-size:10px;color:#64748b;margin-top:4px}
+/* stacked bar */
+.sbar{height:26px;border-radius:7px;overflow:hidden;display:flex;background:#f1f5f9;border:1px solid #e2e8f0}
+.sbar>div{height:100%;transition:width .3s}
+.seg-approved{background:#16a34a}
+.seg-puesto{background:#2563eb}
+.seg-porponer{background:#f59e0b}
+.seg-failed{background:#e11d48}
+.seg-pending{background:#cbd5e1}
+.sbar-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:9px;font-size:11px}
+.sbar-legend span{display:flex;align-items:center;gap:5px}
+.sbar-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.big-num{font-size:30px;font-weight:800;color:#16a34a;line-height:1}
+.big-sub{font-size:11px;color:#64748b;margin-top:3px}
+/* per-semester chart */
+.semchart{display:flex;align-items:flex-end;gap:4px;height:90px;padding-top:4px}
+.sembar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:14px}
+.sembar{width:100%;background:#dbeafe;border-radius:3px 3px 0 0;position:relative;transition:height .3s}
+.sembar.over{background:#fecaca}
+.sembar-lbl{font-size:8px;color:#94a3b8}
+.sembar-val{font-size:8px;color:#475569;font-weight:700}
+/* checklist */
+#checklist{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px}
+.cl-group{background:white;border:1px solid #e2e8f0;border-radius:11px;padding:12px}
+.cl-ghdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.cl-gtitle{font-size:12px;font-weight:700;color:#1e293b}
+.cl-gcr{font-size:11px;font-weight:700;color:#64748b;white-space:nowrap}
+.cl-prog{height:5px;background:#f1f5f9;border-radius:3px;overflow:hidden;margin-bottom:9px}
+.cl-prog>div{height:100%;background:#16a34a;transition:width .3s}
+.cl-chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{display:flex;align-items:center;gap:5px;font-size:11px;padding:3px 8px;border-radius:6px;cursor:pointer;border:1px solid #e2e8f0;background:#f8fafc;user-select:none}
+.chip:hover{filter:brightness(.97);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.chip .cdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.chip.c-approved{background:#f0fdf4;border-color:#86efac}
+.chip.c-failed{background:#fff1f2;border-color:#fda4af}
+.chip.c-in_progress{background:#eff6ff;border-color:#93c5fd}
+.chip.c-pending{background:#eff6ff;border-color:#93c5fd}
+.chip.c-porponer{background:#fffbeb;border-color:#fcd34d}
+.chip small{color:#94a3b8;font-size:9px}
+.chip .fbadge{font-size:8px;font-weight:700;color:#be123c;background:#ffe4e6;border-radius:3px;padding:0 3px}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#f1f5f9}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+
+/* ───── Auth / Login ───── */
+#user-badge{font-size:11px;color:#94a3b8;white-space:nowrap}
+#btn-logout{background:#334155;color:white;border:none;border-radius:5px;padding:4px 10px;cursor:pointer;font-size:11px}
+#btn-logout:hover{background:#475569}
+#auth{position:fixed;inset:0;background:rgba(15,23,42,.78);display:none;z-index:2000;align-items:center;justify-content:center;padding:20px}
+#auth.open{display:flex}
+#auth-card{background:white;border-radius:16px;padding:30px 26px;max-width:380px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.auth-logo{font-size:42px;margin-bottom:4px}
+#auth-card h2{font-size:20px;font-weight:800;color:#0f172a;margin-bottom:6px}
+.auth-sub{font-size:13px;color:#64748b;margin-bottom:18px;line-height:1.5}
+#auth-email{width:100%;padding:11px 13px;border:1.5px solid #cbd5e1;border-radius:9px;font-size:14px;margin-bottom:10px}
+#auth-email:focus{outline:none;border-color:#1e40af}
+#auth-send{width:100%;padding:11px;background:#1e40af;color:white;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer}
+#auth-send:hover{background:#1d4ed8}
+#auth-send:disabled{background:#94a3b8;cursor:default}
+#auth-msg{font-size:12px;color:#334155;margin-top:12px;min-height:16px;line-height:1.4}
+.auth-skip{font-size:11px;color:#94a3b8;margin-top:16px}
+.auth-skip a{color:#1e40af}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>🎓 Malla Interactiva — Ing. Mecánica + Industrial (PUC)</h1>
+  <div class="stat">📌 En malla: <b id="st-placed">0 cr</b></div>
+  <div class="stat">✅ Aprobados: <b id="st-cr">0 cr</b></div>
+  <div class="stat">⏳ Pendientes: <b id="st-pend">0 cr</b></div>
+  <div class="stat">Progreso: <b id="st-pct">0%</b></div>
+  <span id="user-badge" style="display:none"></span>
+  <button id="btn-reset">↺ Reiniciar</button>
+  <button id="btn-logout" style="display:none">⎋ Cerrar sesión</button>
+</div>
+
+<div id="auth">
+  <div id="auth-card">
+    <div class="auth-logo">🎓</div>
+    <h2>Malla Interactiva</h2>
+    <p class="auth-sub">Ingresa con tu correo para guardar tu malla en la nube y verla desde cualquier dispositivo.</p>
+    <input id="auth-email" type="email" placeholder="tucorreo@uc.cl" autocomplete="email">
+    <button id="auth-send">Enviar enlace mágico</button>
+    <div id="auth-msg"></div>
+    <p class="auth-skip">¿Solo quieres mirar? <a href="#" id="auth-offline">Usar sin cuenta (solo este navegador)</a></p>
+  </div>
+</div>
+
+<div id="main">
+  <div id="scroll-area">
+    <div id="semesters"></div>
+  </div>
+  <div id="sidebar">
+    <div class="ss">
+      <h3>Sin ubicar (pool)</h3>
+      <div id="pool"></div>
+    </div>
+    <div class="ss">
+      <h3>Leyenda estado</h3>
+      <div class="legend">
+        <div class="li"><div class="ldot" style="background:#f59e0b"></div>Por poner (en pool)</div>
+        <div class="li"><div class="ldot" style="background:#94a3b8"></div>Planificado (en malla)</div>
+        <div class="li"><div class="ldot" style="background:#2563eb"></div>En curso</div>
+        <div class="li"><div class="ldot" style="background:#16a34a"></div>Aprobado</div>
+        <div class="li"><div class="ldot" style="background:#e11d48"></div>Reprobado</div>
+      </div>
+    </div>
+    <div class="ss">
+      <h3>Uso</h3>
+      <p class="help-text">
+        • Arrastra ramos entre semestres<br>
+        • Click en tarjeta → cambiar estado<br>
+        • [i] → ver requisitos del ramo<br>
+        • [✎] → renombrar AFG / OPI<br>
+        • Máx. <b>60 cr</b> por semestre<br>
+        • Arrastra al pool para desasignar<br>
+        • [🔓/🔒] → fijar/soltar ramo<br>
+        • Reprobar → aparece reintento ↻ en el pool<br>
+        • Aprobar → el reintento desaparece<br>
+        • Prereq: basta con estar antes en la malla<br>
+        • <b>+</b> al final → agregar semestre
+      </p>
+    </div>
+  </div>
+</div>
+
+<div id="panel">
+  <h2>🎯 Panel de Egreso</h2>
+  <div class="panel-top">
+    <div class="box">
+      <h3>⏳ Cuenta regresiva</h3>
+      <div class="cd-row">
+        <div class="cd-cell"><div class="cd-num" id="cd-rem">0</div><div class="cd-lbl">semestres restantes</div></div>
+        <div class="cd-cell"><div class="cd-num" id="cd-years">0</div><div class="cd-lbl">años aprox.</div></div>
+        <div class="cd-cell"><div class="cd-num" id="cd-grad">—</div><div class="cd-lbl">egreso estimado</div></div>
+      </div>
+    </div>
+    <div class="box">
+      <h3>📊 Avance de créditos (requeridos)</h3>
+      <div class="sbar" id="sbar"></div>
+      <div class="sbar-legend" id="sbar-legend"></div>
+    </div>
+    <div class="box">
+      <h3>🎓 Progreso total</h3>
+      <div class="big-num" id="big-pct">0%</div>
+      <div class="big-sub" id="big-sub">0 / 0 cr aprobados</div>
+    </div>
+    <div class="box">
+      <h3>📈 Carga por semestre</h3>
+      <div class="semchart" id="semchart"></div>
+    </div>
+  </div>
+  <h2>📋 Ramos para egresar</h2>
+  <div id="checklist"></div>
+</div>
+
+<div id="ov">
+  <div id="modal">
+    <h2 id="m-title"></h2>
+    <div class="mcode" id="m-code"></div>
+    <div class="msec">
+      <h4>Requisitos</h4>
+      <div id="m-req"></div>
+    </div>
+    <div class="msec">
+      <h4>Estado actual</h4>
+      <div id="m-info"></div>
+    </div>
+    <button id="mclose">Cerrar</button>
+  </div>
+</div>
+
+<!-- Supabase JS v2 (build UMD) vía CDN — expone window.supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONFIG SUPABASE  ←  PEGA AQUÍ TUS CREDENCIALES PÚBLICAS
+// (son seguras de exponer: el acceso real lo controla RLS)
+// ═══════════════════════════════════════════════════════════
+// OJO: la URL es SOLO el dominio del proyecto, sin "/rest/v1/" ni barra final.
+const SUPABASE_URL      = "https://gelwqavwxreuvqgfbciu.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_3GHj_qTJWqQvQIHa5fUFQA_APR4mQDf"; // clave pública (publishable/anon)
+
+// ¿Están puestas las credenciales? (si no, la app corre 100% offline con localStorage)
+const SUPA_CONFIGURED = !SUPABASE_URL.includes("TU-PROYECTO") && SUPABASE_ANON_KEY.length > 10;
+let sb = null;
+if (SUPA_CONFIGURED) {
+  if (window.supabase) {
+    try { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+    catch(e){ console.warn("createClient falló:", e); }
+  } else {
+    console.warn("No se cargó la librería de Supabase desde el CDN (¿sin conexión o bloqueado?).");
+  }
+}
+let currentUser = null;   // user de Supabase cuando hay sesión activa
+
+// ─────────────────────────────────────────────
+// COURSE DEFINITIONS
+// ─────────────────────────────────────────────
+const C = {
+  // ── Semestre 1 ──
+  "MAT1000":{ name:"Precálculo", cr:10, req:null, sug:1, type:"cupo", phase:"lic" },
+  "FIS1503": { name:"Física General", cr:10, req:null, sug:1, type:"cupo", phase:"lic" },
+  "BIO141C": { name:"Biología de la Célula", cr:10, req:null, sug:1, type:"cupo", phase:"lic" },
+  "QIM100":  { name:"Química General", cr:10, req:null, sug:1, type:"cupo", phase:"lic" },
+  "AFG_SB":  { name:"AFG Salud y Bienestar", cr:10, req:null, sug:1, type:"afg", phase:"lic", editable:true },
+  "CLG0901": { name:"Taller de Iniciación", cr:5, req:null, sug:1, type:"cupo", phase:"lic" },
+
+  // ── Semestre 2 ──
+  "MAT1610": { name:"Cálculo I", cr:10, req:"MAT1000", sug:2, type:"major", phase:"lic" },
+  "ING1004": { name:"Desafíos de la Ingeniería", cr:10, req:null, sug:2, type:"major", phase:"lic" },
+  "MAT1203": { name:"Álgebra Lineal", cr:10, req:"MAT1000", sug:2, type:"major", phase:"lic" },
+  "AFG_CS":  { name:"AFG Ciencias Sociales", cr:10, req:null, sug:2, type:"afg", phase:"lic", editable:true },
+  "OPT_EXP": { name:"Optativo Exploratorio", cr:10, req:null, sug:2, type:"optativo", phase:"lic", editable:true },
+
+  // ── Semestre 3 ──
+  "MAT1620": { name:"Cálculo II", cr:10, req:"MAT1610", sug:3, type:"major", phase:"lic" },
+  "FIS1514": { name:"Dinámica", cr:10,
+    req:{ or:[
+      { and:["FIS1503","MAT1203",{cc:"MAT1620"}] },
+      { and:[{cc:"MAT1203"},"MAT1610"] }
+    ]},
+    sug:3, type:"major", phase:"lic" },
+  "FIS0154": { name:"Lab. Dinámica", cr:0, req:{cc:"FIS1514"}, sug:3, type:"major", phase:"lic" },
+  "QIM100A": { name:"Química General II", cr:10, req:"QIM100", sug:3, type:"major", phase:"lic" },
+  "IIC1103": { name:"Intro. a la Programación", cr:10, req:null, sug:3, type:"major", phase:"lic" },
+  "EAE105A": { name:"Intro. a la Economía", cr:10, req:null, sug:3, type:"afg", phase:"lic" },
+
+  // ── Semestre 4 ──
+  "MAT1630": { name:"Cálculo III", cr:10, req:{and:["MAT1203","MAT1620"]}, sug:4, type:"major", phase:"lic" },
+  "MAT1640": { name:"Ecuaciones Diferenciales", cr:10, req:{and:["MAT1203","MAT1620"]}, sug:4, type:"major", phase:"lic" },
+  "FIS1523": { name:"Termodinámica", cr:10,
+    req:{and:[{cc:"FIS0152"},{cc:"MAT1630"}]},
+    sug:4, type:"major", phase:"lic" },
+  "FIS0152": { name:"Lab. Termodinámica", cr:0, req:{cc:"FIS1523"}, sug:4, type:"major", phase:"lic" },
+  "ICM2403": { name:"Ciencia de los Materiales", cr:10,
+    req:{and:[{or:["FIS1514","ICE1514"]},"QIM100A"]},
+    sug:4, type:"major", phase:"lic" },
+  "FIL2001": { name:"Filosofía: ¿Para Qué?", cr:10, req:null, sug:4, type:"afg", phase:"lic" },
+
+  // ── Semestre 5 ──
+  "EYP1113": { name:"Probabilidad y Estadística", cr:10, req:"MAT1630", sug:5, type:"major", phase:"lic" },
+  "FIS1533": { name:"Electricidad y Magnetismo", cr:10,
+    req:{and:[{cc:"FIS0153"},"MAT1630"]},
+    sug:5, type:"major", phase:"lic" },
+  "FIS0153": { name:"Lab. Electricidad y Magnetismo", cr:0, req:{cc:"FIS1533"}, sug:5, type:"major", phase:"lic" },
+  "ICH1104": { name:"Mecánica de Fluidos", cr:10,
+    req:{and:["FIS1523","MAT1630","MAT1640"]},
+    sug:5, type:"major", phase:"lic" },
+  "ICM2803": { name:"Dinámica de Sistemas Mecánicos", cr:10,
+    req:"FIS1514",
+    sug:5, type:"major", phase:"lic" },
+  "AFG_E":   { name:"AFG Ecología Integral y Sustentabilidad", cr:10, req:null, sug:5, type:"afg", phase:"lic", editable:true },
+
+  // ── Semestre 6 ──
+  "ICM2028": { name:"Mecánica de Materiales", cr:10, req:"FIS1514", sug:6, type:"major", phase:"lic" },
+  "ICM2813": { name:"Control de Sistemas Mecánicos", cr:10, req:"ICM2803", sug:6, type:"major", phase:"lic" },
+  "AFG_A":   { name:"AFG Artes", cr:10, req:null, sug:6, type:"afg", phase:"lic", editable:true },
+  "ICS1113": { name:"Optimización", cr:10,
+    req:{and:["MAT1203","MAT1620"]},
+    sug:6, type:"minor", phase:"lic", tag:"Minor ICI" },
+  "ICS2813": { name:"Organización y Comportamiento", cr:10,
+    req:{credits:250},
+    sug:6, type:"minor", phase:"lic", tag:"Minor ICI" },
+
+  // ── Semestre 7 ──
+  "ICM2022": { name:"Diseño Mecánico", cr:10, req:{cc:"ICM2028"}, sug:7, type:"major", phase:"lic" },
+  "ICM2223": { name:"Transferencia de Calor", cr:10, req:"ICH1104", sug:7, type:"major", phase:"lic" },
+  "AFG_H":   { name:"AFG Humanidades", cr:10, req:null, sug:7, type:"afg", phase:"lic", editable:true },
+  "ICS2123": { name:"Modelos Estocásticos", cr:10,
+    req:{and:["EYP1113","ICS1113"]},
+    sug:7, type:"minor", phase:"lic", tag:"Minor ICI" },
+  "ICS2523": { name:"Microeconomía", cr:10,
+    req:{and:["EAE105A","ICS1113"]},
+    sug:7, type:"minor", phase:"lic", tag:"Minor ICI" },
+
+  // ── Semestre 8 ──
+  "ICM2213": { name:"Conversión de Energía", cr:10, req:"ICM2223", sug:8, type:"major", phase:"lic" },
+  "ICM2503": { name:"Procesos de Manufactura", cr:10, req:{cc:"ICM2022"}, sug:8, type:"major", phase:"lic" },
+  "ICM2026": { name:"Proy. Diseño Mecánico (Capstone)", cr:10,
+    req:{and:[{cc:"ICM2022"},{cc:"ICM2223"},{cc:"ICM2503"},"ICM2403"]},
+    sug:8, type:"major", phase:"lic" },
+  "AFG_T":   { name:"Teológico", cr:10, req:null, sug:8, type:"afg", phase:"lic", editable:true },
+  "ING1001": { name:"Práctica I", cr:0, req:null, sug:8, type:"major", phase:"lic" },
+  "ICS2613": { name:"Contabilidad y Control de Gestión", cr:10,
+    req:{credits:270},
+    sug:8, type:"minor", phase:"lic", tag:"Minor ICI" },
+
+  // ── Continuidad — Diploma Mecánica (Sem 9-11) ──
+  "ICM3290": { name:"Sistemas Térmicos y de Conversión de Energía", cr:10, req:"ICM2213", sug:9, type:"diploma", phase:"cont" },
+  "ICM3313": { name:"Diseño de Máquinas", cr:10, req:"ICM2022", sug:9, type:"diploma", phase:"cont" },
+  "ICM3532": { name:"Comportamiento Mecánico de los Materiales", cr:10, req:"ICM2403", sug:9, type:"diploma", phase:"cont" },
+  "ICM3390": { name:"Taller de Diseño de Productos Mecánicos (Proy. Título)", cr:10,
+    req:{and:["ICM3290","ICM3313","ICM3532"]},
+    sug:11, type:"diploma", phase:"cont" },
+
+  // ── Continuidad — Título ICI (Sem 9-11) ──
+  "ICS3913": { name:"Evaluación de Proyectos (Proy. Título)", cr:10, req:null, sug:11, type:"continuation", phase:"cont" },
+  "ICS3313": { name:"Marketing", cr:10, req:null, sug:10, type:"continuation", phase:"cont" },
+  "ICS3413": { name:"Finanzas", cr:10, req:null, sug:10, type:"continuation", phase:"cont" },
+  "ICS3213": { name:"Gestión de Operaciones", cr:10, req:null, sug:10, type:"continuation", phase:"cont" },
+  "ING2001": { name:"Práctica II", cr:0, req:null, sug:11, type:"continuation", phase:"cont" },
+
+  // ── Optativos Mecánica ICM 3000 (elegir 20 cr) — pool ──
+  "ICM3213": { name:"Energía Sustentable", cr:10,
+    req:{or:[
+      {and:["ICM2213","ICM2002"]},{and:["ICM2213","ICM2223"]},{and:["ICM2213","IIQ2002"]},
+      {and:["ICM2612","ICM2002"]},{and:["ICM2612","ICM2223"]},{and:["ICM2612","IIQ2002"]}
+    ]},
+    sug:null, type:"optativo", phase:"cont" },
+  "ICM3233": { name:"Refrigeración, Ventilación y Climatización", cr:10, req:"ICM2223", sug:null, type:"optativo", phase:"cont" },
+  "ICM3243": { name:"Combustión", cr:10,
+    req:{or:[
+      {and:["ICM2002","ICM2213"]},{and:["ICM2213","ICM2223"]},{and:["ICM2213","IIQ2002"]},{and:["ICM2213","IIQ2003"]},
+      {and:["ICM2002","ICM2612"]},{and:["ICM2223","ICM2612"]},{and:["ICM2612","IIQ2002"]},{and:["ICM2612","IIQ2003"]}
+    ]},
+    sug:null, type:"optativo", phase:"cont" },
+  "ICM3251": { name:"Evaluación y Predicción de Recurso Solar", cr:10, req:"ICM2213", sug:null, type:"optativo", phase:"cont" },
+  "ICM3252": { name:"Integración de Energía Solar Térmica a Procesos Industriales", cr:10, req:"ICM2213", sug:null, type:"optativo", phase:"cont" },
+  "ICM3254": { name:"Concentración Solar de Potencia", cr:10, req:"ICM2213", sug:null, type:"optativo", phase:"cont" },
+  "ICM3256": { name:"Tecnologías de Almacenamiento de Energía", cr:10, req:{and:["ICM2213","ICM2223"]}, sug:null, type:"optativo", phase:"cont" },
+  "ICM3480": { name:"Monitoreo de Condición", cr:10,
+    req:{and:["EYP1113","IIC1103",{or:["ICM2813","IEE2613"]}]},
+    sug:null, type:"optativo", phase:"cont" },
+  "ICM3534": { name:"Daño de Materiales por Acción del Medio Ambiente", cr:10, req:"ICM2026", sug:null, type:"optativo", phase:"cont" },
+  "ICM3553": { name:"Ingeniería de Superficie y Tribología", cr:10, req:"ICM2026", sug:null, type:"optativo", phase:"cont" },
+  "ICM3762": { name:"Métodos Modernos de Manufactura", cr:10, req:"ICM2503", sug:null, type:"optativo", phase:"cont" },
+
+  // ── Optativos de Profundización en Ingeniería (OPI, elegir 20 cr) — pool ──
+  "OPI_1": { name:"Optativo Profundización Ingeniería I", cr:10, req:null, sug:null, type:"opi", phase:"cont", editable:true },
+  "OPI_2": { name:"Optativo Profundización Ingeniería II", cr:10, req:null, sug:null, type:"opi", phase:"cont", editable:true },
+};
+
+const MAX_CR = 60;
+const ST_CYCLE = ["pending","in_progress","approved","failed"];
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+function defaultState() {
+  const status = {}, placement = {};
+  Object.keys(C).forEach(id => {
+    status[id] = "pending";
+    placement[id] = C[id].sug; // null = pool
+  });
+  return { status, placement, numSems:11, names:{}, locked:{}, retakeCount:{} };
+}
+
+// Sanea/migra un objeto de estado (venga de localStorage o de la nube),
+// rellenando campos faltantes y ramos nuevos. NO cambia la forma de S.
+function normalizeState(o){
+  if(!o || typeof o!=="object") return defaultState();
+  if(!o.status) o.status={};
+  if(!o.placement) o.placement={};
+  if(!o.numSems) o.numSems=11;
+  if(!o.names) o.names={};
+  if(!o.locked) o.locked={};
+  if(!o.retakeCount) o.retakeCount={};
+  Object.keys(C).forEach(id=>{
+    if(!(id in o.status))    o.status[id]="pending";
+    if(!(id in o.placement)) o.placement[id]=C[id].sug;
+  });
+  return o;
+}
+
+let S = (() => {
+  let o=null;
+  try { const s = localStorage.getItem("malla_v6"); if (s) o=JSON.parse(s); } catch(e){}
+  if (!o) { try { const s = localStorage.getItem("malla_v5"); if (s) o=JSON.parse(s); } catch(e){} }
+  return o ? normalizeState(o) : defaultState();
+})();
+let dragId = null;
+
+function save() {
+  localStorage.setItem("malla_v6", JSON.stringify(S)); // caché/respaldo local inmediato
+  scheduleCloudSave();                                  // y a la nube (con debounce)
+}
+
+// dynamic semester list
+function semList() { return Array.from({length:S.numSems},(_,i)=>i+1); }
+
+// ─────────────────────────────────────────────
+// INSTANCE MODEL (base id === código; reintentos => "CODE~2", "CODE~3"…)
+// ─────────────────────────────────────────────
+function baseOf(inst){ return inst.split("~")[0]; }
+function attemptOf(inst){ const p=inst.split("~"); return p.length>1?parseInt(p[1]):1; }
+function defOf(inst){ return C[baseOf(inst)]; }
+function instancesOf(code){
+  const arr=[code]; const n=S.retakeCount[code]||0;
+  for(let k=2;k<=n+1;k++) arr.push(code+"~"+k);
+  return arr;
+}
+function allInstances(){ return Object.keys(C).flatMap(instancesOf); }
+
+// display name (custom override por código) + sufijo de reintento
+function nameOf(inst){
+  const code=baseOf(inst);
+  const base=(S.names && S.names[code]) || C[code].name;
+  return attemptOf(inst)>1 ? base+" (reintento "+attemptOf(inst)+")" : base;
+}
+function isLocked(inst){ return !!S.locked[inst]; }
+
+// ─────────────────────────────────────────────
+// CÓDIGO-level helpers (para prereqs y egreso)
+// ─────────────────────────────────────────────
+function isApprovedCode(code){ return instancesOf(code).some(i=>S.status[i]==="approved"); }
+function approvedSemOf(code){ // menor semestre de una instancia aprobada y ubicada
+  let m=null;
+  instancesOf(code).forEach(i=>{ if(S.status[i]==="approved" && S.placement[i]!==null){ if(m===null||S.placement[i]<m)m=S.placement[i]; }});
+  return m;
+}
+function placedSemOf(code){ // menor semestre de cualquier instancia ubicada
+  let m=null;
+  instancesOf(code).forEach(i=>{ if(S.placement[i]!==null){ if(m===null||S.placement[i]<m)m=S.placement[i]; }});
+  return m;
+}
+// créditos (únicos por código) ubicados en algún semestre ANTES de tgt
+function creditsBefore(tgt){
+  let n=0;
+  Object.keys(C).forEach(code=>{ const s=placedSemOf(code); if(s!==null && s<tgt) n+=C[code].cr; });
+  return n;
+}
+// estado visual de una instancia: "por poner" si está en el pool sin empezar
+function displayState(inst){
+  const st=S.status[inst]||"pending";
+  if(S.placement[inst]===null && st==="pending") return "porponer";
+  return st;
+}
+
+// ─────────────────────────────────────────────
+// CONTADORES
+// ─────────────────────────────────────────────
+function semCr(sem){ return allInstances().reduce((n,i)=> S.placement[i]===sem ? n+defOf(i).cr : n, 0); }
+function approvedCr(){ return Object.keys(C).reduce((n,code)=> isApprovedCode(code)? n+C[code].cr : n, 0); } // único por código
+function placedCr(){ return allInstances().reduce((n,i)=> S.placement[i]!==null ? n+defOf(i).cr : n, 0); }
+function inSem(sem){ return allInstances().filter(i => S.placement[i]===sem); }
+function inPool(){ return allInstances().filter(i => S.placement[i]===null); }
+
+// ─────────────────────────────────────────────
+// CAMBIO DE ESTADO + REINTENTOS
+// ─────────────────────────────────────────────
+function setStatus(inst, st){ S.status[inst]=st; reconcileRetakes(baseOf(inst)); save(); render(); }
+function cycleStatus(inst){
+  const i=ST_CYCLE.indexOf(S.status[inst]||"pending");
+  setStatus(inst, ST_CYCLE[(i+1)%ST_CYCLE.length]);
+}
+function addRetake(code){
+  S.retakeCount[code]=(S.retakeCount[code]||0)+1;
+  const id=code+"~"+(S.retakeCount[code]+1);
+  S.status[id]="pending"; S.placement[id]=null;
+}
+function reconcileRetakes(code){
+  // si el ramo ya está APROBADO, los reintentos pendientes/reprobados sobran → se eliminan
+  if(isApprovedCode(code)){ pruneRetakes(code); return; }
+  const insts=instancesOf(code);
+  // si TODAS las instancias están reprobadas, hace falta un nuevo intento en el pool
+  const anyActive=insts.some(i=>S.status[i]!=="failed");
+  if(!anyActive) addRetake(code);
+}
+// conserva sólo los reintentos APROBADOS; descarta pendientes/en curso/reprobados
+function pruneRetakes(code){
+  const n=S.retakeCount[code]||0; if(n<1) return;
+  const keep=[];
+  for(let k=2;k<=n+1;k++){ const id=code+"~"+k;
+    if(S.status[id]==="approved") keep.push({status:S.status[id],placement:S.placement[id],locked:S.locked[id]});
+    delete S.status[id]; delete S.placement[id]; delete S.locked[id];
+  }
+  keep.forEach((d,idx)=>{ const id=code+"~"+(idx+2); S.status[id]=d.status; S.placement[id]=d.placement; if(d.locked)S.locked[id]=d.locked; });
+  S.retakeCount[code]=keep.length;
+}
+function removeRetake(inst){ // borra una instancia de reintento concreta (compacta numeración)
+  const code=baseOf(inst); const n=S.retakeCount[code]||0; if(n<1) return;
+  // recoge intentos 2..n+1 excepto el borrado, reasigna en orden
+  const keep=[];
+  for(let k=2;k<=n+1;k++){ const id=code+"~"+k; if(id!==inst) keep.push({status:S.status[id],placement:S.placement[id],locked:S.locked[id]}); delete S.status[id]; delete S.placement[id]; delete S.locked[id]; }
+  keep.forEach((d,idx)=>{ const id=code+"~"+(idx+2); S.status[id]=d.status; S.placement[id]=d.placement; if(d.locked)S.locked[id]=d.locked; });
+  S.retakeCount[code]=keep.length;
+  save(); render();
+}
+
+// ─────────────────────────────────────────────
+// PREREQ CHECK  (rec: null|string|{cc}|{credits}|{and}|{or})
+// ─────────────────────────────────────────────
+function chk(req, tgt) {
+  if (!req) return { ok:true, miss:[] };
+  if (typeof req==="string") {
+    // basta con estar ubicado en un semestre ANTERIOR en la malla (no requiere aprobar)
+    const sem=placedSemOf(req);
+    const ok = sem!==null && sem<tgt;
+    return ok ? {ok:true,miss:[]} : {ok:false,miss:[req+(C[req]?" — "+nameOf(req):"")]};
+  }
+  if (req.cc) {
+    const id=req.cc, p=placedSemOf(id);
+    const ok = p!==null && p<=tgt; // mismo semestre o antes
+    return ok ? {ok:true,miss:[]} : {ok:false,miss:[id+(C[id]?" — "+nameOf(id):"")+" (concurrent)"]};
+  }
+  if (req.credits!==undefined) {
+    const tot=creditsBefore(tgt);
+    return tot>=req.credits ? {ok:true,miss:[]} : {ok:false,miss:[`≥${req.credits} cr antes en la malla (tienes ${tot})`]};
+  }
+  if (req.and) {
+    const all=req.and.map(r=>chk(r,tgt));
+    const miss=all.flatMap(r=>r.miss);
+    return {ok:miss.length===0,miss};
+  }
+  if (req.or) {
+    const res=req.or.map(r=>chk(r,tgt));
+    if (res.some(r=>r.ok)) return {ok:true,miss:[]};
+    return {ok:false,miss:["(uno de) "+res.flatMap(r=>r.miss).join(" | ")]};
+  }
+  return {ok:true,miss:[]};
+}
+
+function canDrop(inst, tgt) {
+  const cr=defOf(inst).cr;
+  const cur=S.placement[inst]===tgt ? cr : 0;
+  const newCr=semCr(tgt)-cur+cr;
+  if (newCr>MAX_CR) return {ok:false,why:`Semestre tendría ${newCr} cr (máx ${MAX_CR})`};
+  const r=chk(defOf(inst).req,tgt);
+  if (!r.ok) return {ok:false,why:"Faltan requisitos: "+r.miss.join(", ")};
+  return {ok:true};
+}
+
+const TAGS={major:"Major",afg:"AFG",minor:"Minor",optativo:"Opt.",diploma:"Diploma",continuation:"Cont.",cupo:"Cupo",opi:"OPI"};
+const STLABEL={pending:"Planificado",in_progress:"En curso",approved:"Aprobado",failed:"Reprobado",porponer:"Por poner",puesto:"Puesto en malla"};
+
+// ─────────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────────
+function render() {
+  renderSems();
+  renderPool();
+  renderHeader();
+  renderPanel();
+}
+
+function renderHeader() {
+  const st=progStats();
+  document.getElementById("st-placed").textContent=placedCr()+" cr";
+  document.getElementById("st-cr").textContent=st.approved+" cr";
+  document.getElementById("st-pend").textContent=st.pending+" cr";
+  document.getElementById("st-pct").textContent=(st.total>0?Math.round(st.approved/st.total*100):0)+"%";
+}
+
+function renderSems() {
+  const wrap=document.getElementById("semesters");
+  wrap.innerHTML="";
+  const sems=semList();
+  sems.forEach(sem => {
+    const isCont=sem>8;
+    const courses=inSem(sem);
+    const cr=semCr(sem);
+    const crCls=cr>MAX_CR?"over":cr>=50?"near":"ok";
+    // only the last semester (if empty) can be removed
+    const canDel = sem===S.numSems && sem>11 && courses.length===0;
+
+    const col=document.createElement("div");
+    col.className="semester";
+
+    col.innerHTML=`
+      <div class="sem-hdr${isCont?" cont":""}">
+        ${canDel?`<button class="sem-del" title="Eliminar semestre">×</button>`:""}
+        <div class="sem-title">Semestre ${sem}${isCont?" · Continuidad":""}</div>
+        <div class="sem-cr ${crCls}">${cr}/${MAX_CR} cr</div>
+      </div>
+      <div class="drop-zone" data-sem="${sem}"></div>
+    `;
+
+    const zone=col.querySelector(".drop-zone");
+    courses.forEach(inst => zone.appendChild(makeCard(inst)));
+
+    zone.addEventListener("dragover", e => {
+      e.preventDefault();
+      if (!dragId) return;
+      const r=canDrop(dragId,sem);
+      zone.className="drop-zone "+(r.ok?"dov":"dov-bad");
+    });
+    zone.addEventListener("dragleave", ()=>{ zone.className="drop-zone"; });
+    zone.addEventListener("drop", e => {
+      e.preventDefault();
+      zone.className="drop-zone";
+      if (!dragId) return;
+      const r=canDrop(dragId,sem);
+      if (r.ok) { S.placement[dragId]=sem; save(); render(); }
+      else showErr(e,r.why);
+      dragId=null;
+    });
+
+    if (canDel) col.querySelector(".sem-del").addEventListener("click",()=>{
+      S.numSems--; save(); render();
+    });
+
+    wrap.appendChild(col);
+  });
+
+  // "+" tile to add a semester
+  const add=document.createElement("button");
+  add.className="add-sem";
+  add.title="Agregar semestre";
+  add.textContent="+";
+  add.addEventListener("click",()=>{ S.numSems++; save(); render(); });
+  wrap.appendChild(add);
+}
+
+function makeCard(inst) {
+  const c=defOf(inst), ds=displayState(inst);
+  const locked=isLocked(inst), isRetake=attemptOf(inst)>1;
+
+  const el=document.createElement("div");
+  el.className=`card s-${ds}${c.cr===0?" zero":""}${locked?" locked":""}${isRetake?" retake":""}`;
+  if (!locked) el.draggable=true;
+  el.innerHTML=`
+    <div class="ctop">
+      <div class="sdot ${ds}"></div>
+      <div class="ccode">${baseOf(inst)}${isRetake?'<span class="rbadge">↻'+attemptOf(inst)+'</span>':""}</div>
+      <button class="lbtn${locked?' on':''}" title="${locked?'Soltar (fijado)':'Fijar en su lugar'}">${locked?'🔒':'🔓'}</button>
+      ${c.editable?'<button class="ebtn" title="Editar nombre">✎</button>':""}
+      <button class="ibtn" title="Requisitos">i</button>
+    </div>
+    <div class="cname">${nameOf(inst)}</div>
+    <div class="cbot">
+      <div class="ccr">${c.cr} cr</div>
+      <div class="ctag t-${c.type}">${TAGS[c.type]||c.type}${c.tag?" · "+c.tag:""}</div>
+    </div>
+  `;
+
+  if (!locked) {
+    el.addEventListener("dragstart", e => {
+      dragId=inst; el.classList.add("dragging"); e.dataTransfer.effectAllowed="move";
+    });
+    el.addEventListener("dragend", ()=>{
+      dragId=null; el.classList.remove("dragging");
+      document.querySelectorAll(".drop-zone").forEach(z=>z.className="drop-zone");
+    });
+  }
+  el.querySelector(".lbtn").addEventListener("click", e=>{
+    e.stopPropagation();
+    if (locked) delete S.locked[inst]; else S.locked[inst]=true;
+    save(); render();
+  });
+  const eb=el.querySelector(".ebtn"); if(eb) eb.addEventListener("click",e=>{ e.stopPropagation(); editName(inst); });
+  el.querySelector(".ibtn").addEventListener("click",e=>{ e.stopPropagation(); showModal(inst); });
+  el.addEventListener("click", e => { if(e.target.closest("button")) return; cycleStatus(inst); });
+
+  return el;
+}
+
+function editName(inst) {
+  const code=baseOf(inst);
+  const cur=(S.names&&S.names[code])||C[code].name;
+  const v=prompt("Nombre del ramo "+code+":", cur);
+  if (v===null) return;
+  const t=v.trim();
+  if (t==="" || t===C[code].name) { delete S.names[code]; }
+  else { S.names[code]=t; }
+  save(); render();
+}
+
+// ─────────────────────────────────────────────
+// POOL
+// ─────────────────────────────────────────────
+function renderPool() {
+  const pool=document.getElementById("pool");
+  pool.innerHTML="";
+  const ids=inPool();
+  if (!ids.length) { pool.innerHTML='<p class="pool-empty">Todos ubicados ✓</p>'; return; }
+  ids.forEach(inst => {
+    const c=defOf(inst), isRetake=attemptOf(inst)>1;
+    const el=document.createElement("div");
+    el.className="pcard"+(isRetake?" retake":"");
+    el.draggable=true;
+    el.innerHTML=`
+      <div class="ctop" style="margin-bottom:2px">
+        <div class="sdot ${displayState(inst)}"></div>
+        <div class="ccode">${baseOf(inst)}${isRetake?'<span class="rbadge">↻'+attemptOf(inst)+'</span>':""}</div>
+        ${c.editable?'<button class="ebtn" title="Editar nombre">✎</button>':""}
+        ${isRetake?'<button class="dbtn" title="Eliminar reintento">🗑</button>':""}
+        <button class="ibtn" title="Requisitos">i</button>
+      </div>
+      <div class="cname" style="font-size:10px">${nameOf(inst)}</div>
+      <div class="cbot" style="margin-top:2px">
+        <div class="ccr" style="font-size:10px">${c.cr} cr</div>
+        <div class="ctag t-${c.type}">${TAGS[c.type]||c.type}</div>
+      </div>
+    `;
+    el.addEventListener("dragstart", e=>{ dragId=inst; e.dataTransfer.effectAllowed="move"; });
+    el.addEventListener("dragend",()=>{ dragId=null; });
+    el.querySelector(".ibtn").addEventListener("click",e=>{ e.stopPropagation(); showModal(inst); });
+    const eb=el.querySelector(".ebtn"); if(eb) eb.addEventListener("click",e=>{ e.stopPropagation(); editName(inst); });
+    const db=el.querySelector(".dbtn"); if(db) db.addEventListener("click",e=>{ e.stopPropagation(); removeRetake(inst); });
+    el.addEventListener("click", e=>{ if(e.target.closest("button")) return; cycleStatus(inst); });
+    pool.appendChild(el);
+  });
+}
+
+// Pool as drop zone (un-assign)
+document.getElementById("pool").ondragover = e => e.preventDefault();
+document.getElementById("pool").ondrop = e => {
+  e.preventDefault();
+  if (!dragId) return;
+  S.placement[dragId]=null; save(); render(); dragId=null;
+};
+
+// ─────────────────────────────────────────────
+// MODAL
+// ─────────────────────────────────────────────
+function showModal(inst) {
+  const c=defOf(inst), code=baseOf(inst);
+  const tgt=S.placement[inst]||99;
+  document.getElementById("m-title").textContent=nameOf(inst);
+  document.getElementById("m-code").textContent=
+    `${code} · ${c.cr} cr · ${c.phase==="lic"?"Licenciatura":"Continuidad"} · ${c.type}`;
+
+  document.getElementById("m-req").innerHTML=
+    c.req ? fmtReq(c.req, tgt) : '<p style="font-size:12px;color:#64748b">Sin requisitos previos</p>';
+
+  const sem=S.placement[inst];
+  document.getElementById("m-info").innerHTML=`
+    <div class="pi"><b>Estado:</b>&nbsp;${STLABEL[displayState(inst)]}</div>
+    <div class="pi"><b>Semestre:</b>&nbsp;${sem!==null?"Semestre "+sem:"Sin ubicar (pool)"}</div>
+    <div class="pi"><b>Fijado:</b>&nbsp;${isLocked(inst)?"Sí 🔒":"No"}</div>
+    ${c.tag?`<div class="pi"><b>Tag:</b>&nbsp;${c.tag}</div>`:""}
+  `;
+
+  document.getElementById("ov").classList.add("open");
+}
+
+function fmtReq(req, tgt) {
+  if (!req) return '<p style="font-size:12px;color:#64748b">Sin requisitos</p>';
+  if (typeof req==="string") {
+    const r=chk(req,tgt);
+    const nm=C[req]?`${req} — ${nameOf(req)}`:req;
+    return `<div class="pi"><div class="ps ${r.ok?"ok":"no"}"></div>${nm}</div>`;
+  }
+  if (req.cc) {
+    const r=chk(req,tgt);
+    const nm=C[req.cc]?`${req.cc} — ${nameOf(req.cc)}`:req.cc;
+    return `<div class="pi"><div class="ps ${r.ok?"ok":"no"}"></div>${nm} <em style="font-size:10px;color:#94a3b8;margin-left:4px">(concurrent)</em></div>`;
+  }
+  if (req.credits!==undefined) {
+    const r=chk(req,tgt);
+    return `<div class="pi"><div class="ps ${r.ok?"ok":"no"}"></div>≥${req.credits} créditos antes en la malla (tienes ${creditsBefore(tgt)})</div>`;
+  }
+  if (req.and) {
+    return `<div class="req-group">
+      <div class="req-label">TODOS:</div>
+      ${req.and.map(r=>fmtReq(r,tgt)).join("")}
+    </div>`;
+  }
+  if (req.or) {
+    return `<div class="req-group ror">
+      <div class="req-label ror">UNO DE:</div>
+      ${req.or.map(r=>fmtReq(r,tgt)).join("")}
+    </div>`;
+  }
+  return "";
+}
+
+// ─────────────────────────────────────────────
+// ERROR TOOLTIP
+// ─────────────────────────────────────────────
+function showErr(e, msg) {
+  const t=document.createElement("div");
+  t.className="etip";
+  t.textContent="✕ "+msg;
+  t.style.left=(e.clientX+10)+"px";
+  t.style.top=(e.clientY-10)+"px";
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 3200);
+}
+
+// ─────────────────────────────────────────────
+// PANEL DE EGRESO
+// ─────────────────────────────────────────────
+const PROGRAM=[
+  {g:"Plan Común · Bachillerato (Sem 1-4)", codes:["MAT1000","FIS1503","BIO141C","QIM100","CLG0901","MAT1610","ING1004","MAT1203","QIM100A","IIC1103","MAT1620","FIS1514","FIS0154","MAT1630","MAT1640","FIS1523","FIS0152","ICM2403"]},
+  {g:"Major Ing. Mecánica (Sem 5-8)", codes:["EYP1113","FIS1533","FIS0153","ICH1104","ICM2803","ICM2028","ICM2813","ICM2022","ICM2223","ICM2213","ICM2503","ICM2026","ING1001"]},
+  {g:"Formación General (AFG + Exploratorio)", codes:["AFG_SB","AFG_CS","EAE105A","FIL2001","AFG_E","AFG_A","AFG_T","OPT_EXP"]},
+  {g:"Minor Ing. Industrial", codes:["ICS1113","ICS2123","ICS2523","ICS2613","ICS2813"]},
+  {g:"Diploma Mecánica (Continuidad)", codes:["ICM3290","ICM3313","ICM3532","ICM3390"]},
+  {g:"Título Ing. Civil Industrias (Continuidad)", codes:["ICS3913","ICS3313","ICS3413","ICS3213","ING2001"]},
+  {g:"Optativos de Mecánica (elegir 20 cr)", credits:20, pool:["ICM3213","ICM3233","ICM3243","ICM3251","ICM3252","ICM3254","ICM3256","ICM3480","ICM3534","ICM3553","ICM3762"]},
+  {g:"Optativos Profundización Ing. (OPI · 20 cr)", credits:20, pool:["OPI_1","OPI_2"]},
+];
+
+// estado de un código para el listado: approved | in_progress | pending (puesto) | porponer | failed
+function codeStatus(code){
+  if(isApprovedCode(code)) return "approved";
+  const insts=instancesOf(code);
+  // instancia activa ubicada en la malla => "puesto" (pending/in_progress)
+  const placedAct=insts.find(i=>S.placement[i]!==null && (S.status[i]==="pending"||S.status[i]==="in_progress"));
+  if(placedAct) return S.status[placedAct];
+  // sólo existe en el pool => por poner
+  const poolAct=insts.find(i=>S.placement[i]===null && S.status[i]==="pending");
+  if(poolAct) return "porponer";
+  return "failed";
+}
+function failCount(code){ return instancesOf(code).filter(i=>S.status[i]==="failed").length; }
+// agrupa codeStatus en los 4 buckets del gráfico
+function bucketOf(s){ return s==="approved"?"approved":(s==="pending"||s==="in_progress")?"puesto":s==="porponer"?"porponer":"failed"; }
+
+function progStats(){
+  let total=0, approved=0;
+  PROGRAM.forEach(b=>{
+    if(b.codes){ b.codes.forEach(c=>{ total+=C[c].cr; if(isApprovedCode(c)) approved+=C[c].cr; }); }
+    else { total+=b.credits; let got=0; b.pool.forEach(c=>{ if(isApprovedCode(c)) got+=C[c].cr; }); approved+=Math.min(got,b.credits); }
+  });
+  return {total, approved, pending:total-approved};
+}
+function statusBreakdown(){
+  const o={approved:0,puesto:0,porponer:0,failed:0};
+  PROGRAM.filter(b=>b.codes).forEach(b=>b.codes.forEach(c=>{ o[bucketOf(codeStatus(c))]+=C[c].cr; }));
+  PROGRAM.filter(b=>b.credits).forEach(b=>{
+    let got=0; b.pool.forEach(c=>{ if(isApprovedCode(c)) got+=C[c].cr; });
+    got=Math.min(got,b.credits); o.approved+=got; o.porponer+=(b.credits-got);
+  });
+  return o;
+}
+function gradInfo(){
+  const reqCodes=new Set();
+  PROGRAM.forEach(b=>(b.codes||b.pool).forEach(c=>reqCodes.add(c)));
+  const futureSems=new Set(); let lastPlanned=0;
+  allInstances().forEach(i=>{
+    const sem=S.placement[i]; if(sem===null) return;
+    if(sem>lastPlanned) lastPlanned=sem;
+    if(reqCodes.has(baseOf(i)) && S.status[i]!=="approved") futureSems.add(sem);
+  });
+  let gradSem=0; futureSems.forEach(s=>{ if(s>gradSem) gradSem=s; });
+  if(gradSem===0) gradSem=lastPlanned;
+  return {remaining:futureSems.size, gradSem, years:futureSems.size/2};
+}
+
+function renderPanel(){
+  const st=progStats(), bd=statusBreakdown(), gi=gradInfo();
+
+  // countdown
+  document.getElementById("cd-rem").textContent=gi.remaining;
+  document.getElementById("cd-years").textContent=Math.round(gi.years*10)/10;
+  document.getElementById("cd-grad").textContent=gi.gradSem?("Sem "+gi.gradSem):"—";
+
+  // stacked bar
+  const totBar=bd.approved+bd.puesto+bd.porponer+bd.failed||1;
+  const order=["approved","puesto","porponer","failed"];
+  const labels={approved:"Aprobado",puesto:"Puesto en malla",porponer:"Por poner",failed:"Reprobado"};
+  const cols={approved:"#16a34a",puesto:"#2563eb",porponer:"#f59e0b",failed:"#e11d48"};
+  document.getElementById("sbar").innerHTML=order.map(k=>
+    `<div class="seg-${k}" style="width:${bd[k]/totBar*100}%" title="${labels[k]}: ${bd[k]} cr"></div>`).join("");
+  document.getElementById("sbar-legend").innerHTML=order.map(k=>
+    `<span><i style="background:${cols[k]}"></i>${labels[k]}: <b>${bd[k]}</b> cr</span>`).join("");
+
+  // total progress
+  document.getElementById("big-pct").textContent=(st.total>0?Math.round(st.approved/st.total*100):0)+"%";
+  document.getElementById("big-sub").textContent=`${st.approved} / ${st.total} cr aprobados · faltan ${st.pending} cr`;
+
+  // per-semester chart
+  const sems=semList();
+  const maxCr=Math.max(MAX_CR, ...sems.map(semCr));
+  document.getElementById("semchart").innerHTML=sems.map(s=>{
+    const cr=semCr(s), h=Math.round(cr/maxCr*70);
+    return `<div class="sembar-wrap" title="Semestre ${s}: ${cr} cr">
+      <div class="sembar-val">${cr||""}</div>
+      <div class="sembar${cr>MAX_CR?' over':''}" style="height:${h}px"></div>
+      <div class="sembar-lbl">${s}</div>
+    </div>`;
+  }).join("");
+
+  // checklist
+  const cl=document.getElementById("checklist");
+  cl.innerHTML="";
+  PROGRAM.forEach(b=>{
+    const list=b.codes||b.pool;
+    let gTot,gApp;
+    if(b.codes){ gTot=list.reduce((n,c)=>n+C[c].cr,0); gApp=list.reduce((n,c)=>n+(isApprovedCode(c)?C[c].cr:0),0); }
+    else { gTot=b.credits; gApp=Math.min(list.reduce((n,c)=>n+(isApprovedCode(c)?C[c].cr:0),0), b.credits); }
+    const box=document.createElement("div"); box.className="cl-group";
+    box.innerHTML=`
+      <div class="cl-ghdr">
+        <div class="cl-gtitle">${b.g}</div>
+        <div class="cl-gcr">${gApp}/${gTot} cr${b.credits?` · elegir ${b.credits}`:""}</div>
+      </div>
+      <div class="cl-prog"><div style="width:${gTot?gApp/gTot*100:0}%"></div></div>
+      <div class="cl-chips"></div>`;
+    const chips=box.querySelector(".cl-chips");
+    list.forEach(code=>{
+      const s=codeStatus(code), fc=failCount(code);
+      const showFc=fc && s!=="approved";
+      const chip=document.createElement("div");
+      chip.className=`chip c-${s}`;
+      chip.title=nameOf(code)+" — "+STLABEL[s]+(showFc?` · reprobado ${fc}×`:"")+" (click para cambiar estado)";
+      chip.innerHTML=`<div class="cdot sdot ${s}"></div>${code} <small>${C[code].cr}cr</small>${showFc?'<span class="fbadge">✗'+fc+'</span>':""}`;
+      chip.addEventListener("click",()=>cycleStatus(primaryInstance(code)));
+      chips.appendChild(chip);
+    });
+    cl.appendChild(box);
+  });
+}
+
+// instancia "principal" de un código: aprobada > activa en malla > activa en pool > base
+function primaryInstance(code){
+  const insts=instancesOf(code);
+  return insts.find(i=>S.status[i]==="approved")
+      || insts.find(i=>S.placement[i]!==null && (S.status[i]==="pending"||S.status[i]==="in_progress"))
+      || insts.find(i=>S.placement[i]===null && S.status[i]==="pending")
+      || code;
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+document.getElementById("mclose").addEventListener("click",()=>{
+  document.getElementById("ov").classList.remove("open");
+});
+document.getElementById("ov").addEventListener("click",e=>{
+  if (e.target===document.getElementById("ov"))
+    document.getElementById("ov").classList.remove("open");
+});
+document.getElementById("btn-reset").addEventListener("click",()=>{
+  if (confirm("¿Reiniciar toda la malla? Se perderá el progreso guardado.")) {
+    S=defaultState(); save(); render();
+  }
+});
+
+// ─────────────────────────────────────────────
+// AUTH + GUARDADO EN LA NUBE (Supabase)
+// ─────────────────────────────────────────────
+const elAuth   = document.getElementById("auth");
+const elLogout = document.getElementById("btn-logout");
+const elBadge  = document.getElementById("user-badge");
+
+function showLogin(){ elAuth.classList.add("open"); elLogout.style.display="none"; elBadge.style.display="none"; }
+function hideLogin(){ elAuth.classList.remove("open"); }
+function showLoggedIn(email){
+  hideLogin();
+  elLogout.style.display="";
+  elBadge.style.display=""; elBadge.textContent="👤 "+email;
+}
+
+// --- Guardado con debounce: no escribe en cada micro-movimiento del drag ---
+let cloudTimer=null;
+function scheduleCloudSave(){
+  if(!sb || !currentUser) return;                 // sin login → solo localStorage
+  clearTimeout(cloudTimer);
+  cloudTimer=setTimeout(saveToCloud, 900);
+}
+async function saveToCloud(){
+  if(!sb || !currentUser) return;
+  try{
+    const { error } = await sb.from("malla_state").upsert({
+      user_id: currentUser.id,
+      state: S,
+      updated_at: new Date().toISOString()
+    });
+    if(error) console.warn("Error al guardar en la nube:", error.message);
+  }catch(e){ console.warn("Sin conexión al guardar (queda en localStorage):", e); }
+}
+
+// --- Carga: nube como fuente principal; si no hay fila, se crea con el estado actual ---
+async function loadFromCloud(){
+  if(!sb || !currentUser) return;
+  try{
+    const { data, error } = await sb.from("malla_state")
+      .select("state").eq("user_id", currentUser.id).maybeSingle();
+    if(error){ console.warn("Error al leer la nube (uso localStorage):", error.message); return; }
+    if(data && data.state){
+      S = normalizeState(data.state);                       // usa la malla guardada del usuario
+      localStorage.setItem("malla_v6", JSON.stringify(S));  // cachea local
+      render();
+    } else {
+      // primera vez: el usuario no tiene fila → crea una con lo que haya (local o default)
+      await saveToCloud();
+    }
+  }catch(e){ console.warn("Sin conexión al cargar (uso localStorage):", e); }
+}
+
+async function initAuth(){
+  if(!SUPA_CONFIGURED){ hideLogin(); return; }     // sin credenciales → modo offline puro
+  if(!sb){                                          // configurado pero la librería no cargó
+    showLogin();
+    document.getElementById("auth-msg").textContent =
+      "No se pudo cargar Supabase (¿sin conexión o el CDN está bloqueado?). Recarga la página.";
+    return;
+  }
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    if(session && session.user){
+      currentUser = session.user;
+      showLoggedIn(currentUser.email);
+      await loadFromCloud();
+    } else {
+      showLogin();
+    }
+  }catch(e){ console.warn("getSession falló:", e); showLogin(); }
+
+  // Reacciona al volver del enlace mágico y a cerrar sesión
+  sb.auth.onAuthStateChange(async (event, session)=>{
+    if(session && session.user){
+      if(currentUser && currentUser.id===session.user.id) return; // evita recarga duplicada
+      currentUser = session.user;
+      showLoggedIn(currentUser.email);
+      await loadFromCloud();
+    } else {
+      currentUser = null;
+      showLogin();
+    }
+  });
+}
+
+// Enviar enlace mágico
+document.getElementById("auth-send").addEventListener("click", async ()=>{
+  const email=document.getElementById("auth-email").value.trim();
+  const msg=document.getElementById("auth-msg");
+  const btn=document.getElementById("auth-send");
+  if(!email){ msg.textContent="Escribe tu correo."; return; }
+  if(!sb){ msg.textContent="Supabase aún no está configurado (faltan las credenciales)."; return; }
+  btn.disabled=true; msg.textContent="Enviando…";
+  try{
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options:{ emailRedirectTo: window.location.href.split('#')[0] }
+    });
+    msg.textContent = error ? ("Error: "+error.message)
+                            : "✅ Te enviamos un enlace. Ábrelo desde este mismo dispositivo.";
+  }catch(e){ msg.textContent="Error de red: "+e.message; }
+  btn.disabled=false;
+});
+document.getElementById("auth-email").addEventListener("keydown",e=>{
+  if(e.key==="Enter") document.getElementById("auth-send").click();
+});
+// Usar sin cuenta (solo localStorage)
+document.getElementById("auth-offline").addEventListener("click",e=>{ e.preventDefault(); hideLogin(); });
+// Cerrar sesión
+elLogout.addEventListener("click", async ()=>{
+  if(sb) await sb.auth.signOut();
+  currentUser=null; showLogin();
+});
+
+render();
+initAuth();
+</script>
+</body>
+</html>
+
