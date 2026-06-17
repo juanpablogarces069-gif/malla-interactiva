@@ -145,6 +145,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .sbar-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .big-num{font-size:30px;font-weight:800;color:#16a34a;line-height:1}
 .big-sub{font-size:11px;color:#64748b;margin-top:3px}
+/* créditos inscritos + desglose */
+#inscritos-box{margin-bottom:16px}
+.ins-note{text-transform:none;font-weight:500;color:#94a3b8}
+.ins-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:11px;margin-top:14px}
+.ins-row{font-size:12px}
+.ins-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;gap:8px}
+.ins-name{font-weight:600;color:#334155}
+.ins-cr{color:#64748b;font-weight:700;white-space:nowrap}
+.ins-bar{height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden}
+.ins-bar>div{height:100%;background:#1e40af;transition:width .3s}
+.ins-bar>div.full{background:#16a34a}
 /* per-semester chart */
 .semchart{display:flex;align-items:flex-end;gap:4px;height:90px;padding-top:4px}
 .sembar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:14px}
@@ -284,6 +295,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
       <div class="semchart" id="semchart"></div>
     </div>
   </div>
+
+  <div class="box" id="inscritos-box">
+    <h3>📌 Créditos inscritos <span class="ins-note">(no cuenta reprobados)</span></h3>
+    <div class="big-num" id="ins-num" style="color:#1e40af">0 / 0 cr</div>
+    <div class="big-sub" id="ins-sub">0% de lo necesario para egresar</div>
+    <div class="ins-grid" id="ins-breakdown"></div>
+  </div>
+
   <h2>📋 Ramos para egresar</h2>
   <div id="checklist"></div>
 </div>
@@ -964,6 +983,17 @@ function progStats(){
   });
   return {total, approved, pending:total-approved};
 }
+// un código está "inscrito" si tiene alguna instancia ubicada en la malla y NO reprobada
+function isInscrito(code){
+  return instancesOf(code).some(i => S.placement[i]!==null && S.status[i]!=="failed");
+}
+// créditos inscritos de un bloque del programa (sin contar reprobados)
+function groupInscritos(b){
+  if(b.codes) return b.codes.reduce((n,c)=> isInscrito(c)? n+C[c].cr : n, 0);
+  const got = b.pool.reduce((n,c)=> isInscrito(c)? n+C[c].cr : n, 0);
+  return Math.min(got, b.credits);   // optativos/OPI: tope = lo exigido
+}
+function groupTotal(b){ return b.codes ? b.codes.reduce((n,c)=>n+C[c].cr,0) : b.credits; }
 function statusBreakdown(){
   const o={approved:0,puesto:0,porponer:0,failed:0};
   PROGRAM.filter(b=>b.codes).forEach(b=>b.codes.forEach(c=>{ o[bucketOf(codeStatus(c))]+=C[c].cr; }));
@@ -1008,6 +1038,24 @@ function renderPanel(){
   // total progress
   document.getElementById("big-pct").textContent=(st.total>0?Math.round(st.approved/st.total*100):0)+"%";
   document.getElementById("big-sub").textContent=`${st.approved} / ${st.total} cr aprobados · faltan ${st.pending} cr`;
+
+  // créditos inscritos (ubicados, sin reprobados) + desglose por categoría
+  let insTotal=0;
+  const insRows=PROGRAM.map(b=>{
+    const ins=groupInscritos(b), tot=groupTotal(b);
+    insTotal+=ins;
+    return {name:b.g, ins, tot};
+  });
+  document.getElementById("ins-num").textContent=`${insTotal} / ${st.total} cr`;
+  document.getElementById("ins-sub").textContent=
+    `${st.total?Math.round(insTotal/st.total*100):0}% de lo necesario para egresar · no cuenta reprobados`;
+  document.getElementById("ins-breakdown").innerHTML=insRows.map(r=>{
+    const pct=r.tot?Math.min(r.ins/r.tot*100,100):0;
+    return `<div class="ins-row">
+      <div class="ins-top"><span class="ins-name">${r.name}</span><span class="ins-cr">${r.ins}/${r.tot} cr</span></div>
+      <div class="ins-bar"><div class="${r.ins>=r.tot?"full":""}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join("");
 
   // per-semester chart
   const sems=semList();
